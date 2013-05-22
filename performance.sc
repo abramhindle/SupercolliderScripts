@@ -121,7 +121,7 @@ a.stop
 ~xp = ~x.play;
 (
 var syn, bub;
-syn = SynthDef("moto-rev", { arg out=0,lp=100,iclip=0.4,freq=0.2,delay=0.2;
+syn = SynthDef("mymoto", { arg out=0,lp=100,iclip=0.4,freq=0.2,delay=0.2;
     var x,y ;
 	var kclip = LFSaw.kr(0.1,0,iclip,iclip);
     x = RLPF.ar(LFPulse.ar(SinOsc.kr(freq, 0, 10, 21), [0,0.1], 0.1),
