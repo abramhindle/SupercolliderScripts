@@ -215,7 +215,7 @@ p = Pbind(*[
 	dur: 0.01, instrument: \ss, freq: Pbrown(20,2000,20,4000), amp: 0.01
 ]);
 p.play
-
+p.stop
 z = ()
 z.lol = "huh"
 x = z.copy

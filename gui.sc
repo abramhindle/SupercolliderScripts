@@ -5,7 +5,7 @@
 s.quit;
 s.boot;
 s.scope;
-GUI.qt;
+UI.qt;
 
 ~nm = 16;
 ~motos = [];
@@ -147,6 +147,6 @@ w=Window().layout_( GridLayout.rows(
 });
 
 
-~getmotos.()
+~getmotos.();
 
 1;

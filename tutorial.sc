@@ -67,3 +67,11 @@ Blip.ar(
 Env.perc(0.001, 1, 1, -8).test.plot;
 
 
+x = {CombC.ar(Impulse.ar(Line.kr(1,20,60)),maxdelaytime:1.0,delaytime:1.0,decaytime:1.0)}.play
+
+{ CombC.ar(Decay.ar(Dust.ar(1,0.5), 0.2, WhiteNoise.ar), 0.2, 0.2, 3) }.play;
+{ CombN.ar(WhiteNoise.ar(0.01), 0.01, XLine.kr(0.0001, 0.01, 20), 0.2) }.play;
+{ CombN.ar(WhiteNoise.ar(0.01), 0.01, XLine.kr(0.0001, 0.01, 20), -0.2) }.play;
+{ CombN.ar(BrownNoise.ar(0.01),0.01, 0.01,0.2) }.play;
+
+{RLPF.ar(in:Dust.ar(100,0.5), freq: 440, rq: 1, mul: 1, add: 0)}.play;
