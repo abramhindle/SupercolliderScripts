@@ -104,3 +104,39 @@ SynthDef("blipsaw",
 
 ~collset.(~blips,\freq,{40.rand});
 ~collset.(~blips,\hmul,{40.rand});
+
+~xywindow = {
+	arg collection, arg1, arg2;
+	var w,f,sl2,c1,c2;
+	sl2 = Slider2D();
+	c1 = NumberBox();
+	c2 = NumberBox();
+	sl2.action_({
+		c1.valueAction = sl2.x;
+		c2.valueAction = sl2.y;		
+	});
+	c1.action_({
+		collection.do({|x| 
+			x.set(arg1[0],
+				(c1.value()*(arg1[2] - arg1[1]) - arg1[1]).rand
+			)
+		})
+	});
+	c2.action_({
+		collection.do({|x| 
+			x.set(arg1[0],
+				(c2.value()*(arg2[2] - arg2[1]) - arg2[1]).rand
+			)
+		})
+	});
+	// broken here
+	w=Window().layout_( GridLayout.columns([
+		GridLayout.rows([StaticText(""+arg1[0]),c1]),
+		GridLayout.rows([StaticText(""+arg2[0]),c2]),
+		sl2])).front;
+};
+~xywindow.(~blips,[\freq,0,120],[\hmul,0,60]);
+
+~xywindow.(~blips,[\harmfreq,0,120],[\hmul,0,60]);
+~xywindow.(~blips,[\freq,0,120],[\ffreq,0,120]);
+""+\freq
