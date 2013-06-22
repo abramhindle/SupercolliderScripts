@@ -14,6 +14,9 @@ Task {~len.sleep;
 	{SinOsc.ar([3440,2460])}.play;
 }.play;	
 
+x = {SinOsc.ar([49,51])}.play;
+x.free;
+
 ~maketimer = {
 	arg len=~len;
 	var timer;
@@ -131,12 +134,17 @@ SynthDef("blipsaw",
 	});
 	// broken here
 	w=Window().layout_( GridLayout.columns([
-		GridLayout.rows([StaticText(""+arg1[0]),c1]),
-		GridLayout.rows([StaticText(""+arg2[0]),c2]),
+		c1,c2,
+		//GridLayout.rows([StaticText(""+arg1[0]),c1]),
+		//GridLayout.rows([StaticText(""+arg2[0]),c2]),
 		sl2])).front;
 };
 ~xywindow.(~blips,[\freq,0,120],[\hmul,0,60]);
 
 ~xywindow.(~blips,[\harmfreq,0,120],[\hmul,0,60]);
 ~xywindow.(~blips,[\freq,0,120],[\ffreq,0,120]);
-""+\freq
+
+~xywindow.(~blips,[\fadd,0,120],[\fmul,0,120]);
+
+
+~blips.do({|blip| blip.set(\amp,0.2)});
