@@ -168,7 +168,7 @@ play {
 
 { Klank.ar(`[[900,1101,8000], nil, [1,1,1]], GrayNoise.ar([0.007, 0.006])) }.play;
 
-{ Klank.ar(`[[900,1101,8000], nil, [1,1,1]], BrownNoise.ar([0.007, 0.006])) }.play;
+{ Klank.ar(`[[900,1101,8000,100,90], nil, [1,1,1]], BrownNoise.ar([0.007, 0.006])) }.play;
 x = {	
 	var muls=[0.007,0.006],freqs, ringtimes;
 	freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
@@ -178,10 +178,13 @@ x = {
 ~xxbus = Bus.control;
 ~xxbus.set(Array.rand(4,2000,8000))
 x.setn(\freqs,Array.rand(4,2000,8000))
+x.setn(\freqs,Array.exprand(32,20.0,80.0))
+
 x.set(\muls,[0.03,0.009])
 x.setn(\ringtimes,Array.rand(4,1.0,2.0))
 x.map(\freqs,~xxbus)
 ~xplay = {Out.kr(~xxbus, [MouseX.kr(20,400), MouseY.kr(20,1100), MouseX.kr(40,800), MouseY.kr(100,1100)])}.play;
+~xplay.free;
 
 ~xplay2 = {Out.kr(~xxbus, [Dust.kr(20,400),PinkNoise.kr(400,200),PinkNoise.kr(80,200),PinkNoise.kr(1000,200)])}.play;
 ~xplay2.free;
@@ -230,3 +233,142 @@ p.pb = Pbind(*[
 ]);
 p.pbplay = p.pb.play
 p.pbplay.stop
+
+SynthDef("MKL", { 
+	arg 
+	Klank.ar(`[[900,1101,8000], nil, [1,1,1]], GrayNoise.ar([0.007, 0.006])) }
+).add;
+	//SynthDef("Switch",{arg freq=440; Out.ar(0, SinOsc.ar(freq, 0, 0.3)) }).add;
+
+SynthDef("DKL",{
+	arg out = 0;
+	//arg freqs = [800, 1071, 1153, 1723], ringtimes = [1,1,1,1], muls = [0.007,0.006];
+	var freqs, ringtimes, signal, muls;
+	muls = [0.007, 0.006];
+	freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
+	ringtimes = Control.names([\ringtimes]).kr([1, 1, 1, 1]);
+	signal = DynKlank.ar(`[freqs, nil, ringtimes ], GrayNoise.ar(muls));
+	Out.ar(out, signal);
+}).add;
+
+~dkl = Synth('DKL');
+~dkl.setn(\freqs, Array.rand(4, 500, 2000));
+~dkl.setn(\ringtimes, Array.rand(4, 0.2, 4) );
+
+
+
+(
+// set them from outside later:
+SynthDef('help-dynKlank', {
+    var freqs, ringtimes, signal;
+    freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
+    ringtimes = Control.names([\ringtimes]).kr([1, 1, 1, 1]);
+    signal = DynKlank.ar(`[freqs, nil, ringtimes ], Impulse.ar(2, 0, 0.1));
+    Out.ar(0, signal);
+}).add;
+)
+a = Synth('help-dynKlank');
+a.setn(\freqs, Array.rand(4, 500, 2000));
+a.setn(\ringtimes, Array.rand(4, 0.2, 4) );
+
+Synth.new("DKL")
+
+SynthDef("KL", {	
+	arg muls=[0.007,0.006],freqs=[800,1071,1153,1723], ringtimes=[1,1,1,1];
+	//freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
+	//ringtimes = Control.names([\ringtimes]).kr([1, 1, 1, 1]);
+	//DynKlank.ar(`[freqs, nil, ringtimes ], GrayNoise.ar(muls))
+	SinOsc.ar(freqs[0])
+}).load(s);
+[1,2][0]
+~kl = Synth("KL");
+
+
+~dkl = Synth.new("DKL");
+~kl.setn(\freqs,Array.rand(4,2000,8000));
+
+~dkl = SynthDefAutogui(\DKL)
+Quarks.gui
+
+(
+var envV,win,n;
+n=6;
+envV = EnvelopeView();
+envV.drawLines_(true)
+    .selectionColor_(Color.red)
+    .drawRects_(true)
+    .resize_(5)
+//    .step_(0.05)
+    .action_({arg b; 
+		var f,r,freqs,ringtimes;
+		f = Array.fill((n-1), { arg i; b.value[0][i] });
+		r = Array.fill((n-1), { 
+			arg i; 
+			var x1,y1,o;
+			x1 = abs(b.value[0][i+1] -  b.value[0][i]);
+			y1 = abs(b.value[1][i+1] -  b.value[1][i]);
+			o = sqrt(x1*x1 + y1*y1);
+			o
+		});
+		[b.index, b.value].postln;
+		r.postln;
+		r = (1.0 - r/(2.0.sqrt)) * 8000.0 + 20;
+		//r.postln;
+		~dkl.setn(\freqs, r);
+		~dkl.setn(\ringtimes, f * 9.0 + 0.01 );
+	})
+//.thumbSize_(5)
+//    .value_([[0.0, 0.1, 0.5, 1.0],[0.1,1.0,0.8,0.0]]);
+    .value_([ 0.0!n , 1.0!n]);
+envV.gridOn_(true);
+envV.style_(\rects);
+
+//envV.setEnv(Env.new(0!16));
+win = Window();
+win.layout_(GridLayout.columns([envV]));
+win.front;
+)
+
+(
+n=20;
+w = Window.new.front;
+m = MultiSliderView(w,Rect(10,10,n*13+2,100)); //default thumbWidth is 13
+m.value=Array.fill(n, {|v| v*0.05}); // size is set automatically when you set the value
+m.action = { arg q;
+    q.value.postln;
+};
+)
+(
+n=20;
+w = Window.new.front;
+m = MultiSliderView(w,Rect(10,10,n*13+2,100)); //default thumbWidth is 13
+m.value=Array.fill(n, {|v| v*0.05}); // size is set automatically when you set the value
+m.action = { arg q;
+    q.value.postln;
+};
+)
+(
+n = 256;
+w = Window.new;
+m = MultiSliderView(w);//, Rect(0, 0, 350, 100));   
+m.value_(Array.fill(n, {0.01}));
+m.elasticMode_(1);
+m.isFilled_(true); // width in pixels of each stick
+//m.indexThumbSize_(2.0); // spacing on the value axis
+m.gap_(4);
+m.action_({arg b; 
+	~dkl.setn(\freqs, linexp(b.value,0,1,20,1000))
+});	
+o = MultiSliderView(w);
+o.elasticMode_(1);
+o.value_(Array.fill(n, {0.01}));
+o.isFilled_(true); // width in pixels of each stick
+//m.indexThumbSize_(2.0); // spacing on the value axis
+o.gap_(4);
+o.action_({arg b; 
+	~dkl.setn(\ringtimes, linexp(b.value,0,1,0.001,8))
+});	
+w.layout_(GridLayout.columns([m,o]));
+w.front;
+)
+linexp(0.5,0,1,20,1000)
