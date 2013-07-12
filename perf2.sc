@@ -251,10 +251,53 @@ SynthDef("DKL",{
 	Out.ar(out, signal);
 }).add;
 
-~dkl = Synth('DKL');
-~dkl.setn(\freqs, Array.rand(4, 500, 2000));
-~dkl.setn(\ringtimes, Array.rand(4, 0.2, 4) );
+SynthDef("DKL",{
+	arg out = 0, freqs = [800, 1071, 1153, 1723], ringtimes = [1, 1, 1, 1], muls = [0.007, 0.007];
+	//arg freqs = [800, 1071, 1153, 1723], ringtimes = [1,1,1,1], muls = [0.007,0.006];
+	//var freqs, ringtimes, signal, muls;
+	var signal;//, muls;
+	//muls = [0.007, 0.006];
+	//freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
+	//ringtimes = Control.names([\ringtimes]).kr([1, 1, 1, 1]);
+	signal = DynKlank.ar(`[freqs, nil, ringtimes ], PinkNoise.ar(muls)* [1.0,1.0]);
+	Out.ar(out, signal);
+}).add;
 
+
+
+SynthDef("DKL",{
+	arg out = 0;//, muls = [0.007, 0.007];
+	//arg freqs = [800, 1071, 1153, 1723], ringtimes = [1,1,1,1], muls = [0.007,0.006];
+	var freqs, ringtimes, signal, muls, amps;
+	//var signal;//, muls;
+	//muls = [0.007, 0.006];
+	freqs = Control.names([\freqs]).kr([800, 1071, 1153, 1723]);
+	ringtimes = Control.names([\ringtimes]).kr([1, 1, 1, 1]);
+	muls = Control.names([\muls]).kr([0.007,0.007]);
+	amps = Control.names([\amps]).kr([0.25,0.25,0.25,0.25]);
+	signal = DynKlank.ar(`[freqs, amps, ringtimes ], PinkNoise.ar(muls));
+	Out.ar(out, signal);
+}).add;
+
+
+
+{ Klank.ar(`[[800, 1071, 1153, 1723], nil, [1, 1, 1, 1]], Impulse.ar(2, 0, 0.1)) }.play;
+{ Klank.ar(`[[800, 1071, 1153, 1723], nil, [1, 1, 1, 1]], Impulse.ar(2, 0, 0.1)) }.play;
+{ Klank.ar(`[[800, 1071, 1153, 1723], nil, [1, 1, 1, 1]], Impulse.ar(2, 0, 0.1)) }.play;
+{ Klank.ar(`[[800, 1071, 1153, 1723], nil, [1, 1, 1, 1]], Impulse.ar(2, 0, 0.1)) }.play;
+{ Klank.ar(`[[800, 1071, 1353, 1723], nil, [1, 1, 1, 1]], Dust.ar(8, 0.1)) }.play;
+{ Klank.ar(`[[800, 1071, 1353, 1723], nil, [1, 1, 1, 1]], Dust.ar(8, 0.1)) }.play;
+{ DynKlank.ar(`[[200, 671, 1153, 1723], nil, [1, 1, 1, 1]], PinkNoise.ar([0.007, 0.007])) }.play;
+
+
+
+~dkl = Synth('DKL');
+~dkl.setn(\freqs, [200,671,1153,1723]);
+~dkl.setn(\ringtimes, [1,1,1,1]);
+~dkl.setn(\muls, [0.007,0.007]);
+
+~dkl.setn(\ringtimes, Array.rand(4, 0.2, 4) );
+~dkl.setn(\muls, Array.rand(2, 0.001, 0.01) );
 
 
 (
@@ -285,7 +328,7 @@ SynthDef("KL", {
 
 
 ~dkl = Synth.new("DKL");
-~kl.setn(\freqs,Array.rand(4,2000,8000));
+~dkl.setn(\freqs,Array.rand(4,2000,8000));
 
 ~dkl = SynthDefAutogui(\DKL)
 Quarks.gui
@@ -348,7 +391,7 @@ m.action = { arg q;
 };
 )
 (
-n = 256;
+n = 8;
 w = Window.new;
 m = MultiSliderView(w);//, Rect(0, 0, 350, 100));   
 m.value_(Array.fill(n, {0.01}));
@@ -357,7 +400,9 @@ m.isFilled_(true); // width in pixels of each stick
 //m.indexThumbSize_(2.0); // spacing on the value axis
 m.gap_(4);
 m.action_({arg b; 
-	~dkl.setn(\freqs, linexp(b.value,0,1,20,1000))
+	var r = linexp(b.value,0,1,20,2000);
+	r.postln;
+	~dkl.setn(\freqs, r)
 });	
 o = MultiSliderView(w);
 o.elasticMode_(1);
@@ -368,7 +413,36 @@ o.gap_(4);
 o.action_({arg b; 
 	~dkl.setn(\ringtimes, linexp(b.value,0,1,0.001,8))
 });	
-w.layout_(GridLayout.columns([m,o]));
+
+
+q = MultiSliderView(w);
+q.elasticMode_(1);
+q.value_(Array.fill(n, {0.01}));
+q.isFilled_(true); // width in pixels of each stick
+//m.indexThumbSize_(2.0); // spacing on the value axis
+q.gap_(4);
+q.action_({arg b; 
+	~dkl.setn(\amps, linexp(b.value,0,1,0.001,0.5))
+});	
+
+
+p = MultiSliderView(w);
+p.elasticMode_(1);
+p.value_([0.006,0.007]);
+p.isFilled_(true); // width in pixels of each stick
+//m.indexThumbSize_(2.0); // spacing on the value axis
+p.gap_(4);
+p.action_({arg b; 
+	var r;
+	//b.value.postln;
+	r = linexp(b.value,0,1,0.001,0.1);
+	//r.postln;
+	~dkl.setn(\muls, r)
+});	
+w.layout_(GridLayout.columns([m,o,q,p]));
 w.front;
 )
 linexp(0.5,0,1,20,1000)
+~dkl.setn(\muls,[0.007,0.0001])
+
+play({ Klang.ar(`[ Array.rand(12, 600.0, 1000.0), nil, nil ], 1, 0) * 0.05 });
