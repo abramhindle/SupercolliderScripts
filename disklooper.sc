@@ -1,4 +1,5 @@
 s.boot;
+s.options.numBuffers = 16000;
 s.scope;
 s.freqscope;
 
@@ -9,23 +10,28 @@ SynthDef.new(\recordit,{
 	RecordBuf.ar( in, bufnum, doneAction: 2, loop: 0);
 }).load(s);
 SynthDef.new(\pb,{
-	arg output= 0, bufnum = 0, loop = 0, rate = 1.0, amp = 1.0;
+	arg output= 0, bufnum = 0, loop = 0, rate = 1.0, amp = 1.0, channels = 1;
+	//var channel = 0;
+	//channels.get({|x| channel =x});
 	Out.ar(output,
-		amp * PlayBuf.ar(2, bufnum, rate, BufRateScale.kr(bufnum), loop: loop, doneAction: 2));
+		amp * PlayBuf.ar(1, bufnum, rate, BufRateScale.kr(bufnum), loop: loop, doneAction: 2)!2);
 }).load(s);
 ~drecorditname = 1;
 
 ~drecordit = {
-	arg input = 0, dur = 1.0;
-	var buff, bnum, ret, rec, startTime, name,ttt;
-	name = ~recorditname.asString;
-	~recorditname = ~recorditname + 1;
-	buff = Buffer.alloc(s, s.sampleRate * dur, 2);
+	arg input = 0, dur = 1.0, buff = false, name = "";
+	var bnum, ret, rec=false, startTime, ttt,startrecording=true;
+	if((name==""), {
+		name = ~drecorditname.asString;
+	});
+	~drecorditname = ~drecorditname + 1;
+	if ((buff==false),{ buff = Buffer.alloc(s, s.sampleRate * dur, 2) },{startrecording=false});
 	bnum = buff.bufnum;
 	ret = ();
 	ret.bnum = bnum;
+	ret.channels = buff.numChannels;
 	startTime = thisThread.clock.seconds;
-	rec = Synth(\recordit, [\input, input, \bufnum, bnum]);	
+	if((startrecording),{ rec = Synth(\recordit, [\input, input, \bufnum, bnum]);});
 	ret.rec = rec;
 	ret.off = {
 		var ndur,newbuff, oldb,  nbnum, size;
@@ -49,7 +55,7 @@ SynthDef.new(\pb,{
 	ret.syn = { 
 		arg obj, looping = 0, rate = 1.0, amp=1.0;
 		ret.bnum.postln;
-		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate, \amp, amp]) 
+		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate, \amp, amp, \channels, ret.channels]) 
 	};
 	ret.rate = 1.0;
 	ret.vol = 1.0;
@@ -63,6 +69,7 @@ SynthDef.new(\pb,{
 		rateknobr = Knob();
 		//rateknobr.minSize_(Size(20,20));
 		label = TextField();
+		label.string_(name);
 		done = Button();
 		done.states=[["Stop Recording".asString, Color.black, Color.red]];
 		play = Button();
@@ -94,13 +101,17 @@ SynthDef.new(\pb,{
 			rcb.postln;
 			rcb.();
 			loopsyn.free;
-		});
-		done.action_({ arg button;
-			done.states=[["", Color.black, Color.black]];
-			done.action_({});
-			done.remove();
-			ret.off();
-		});
+		});		
+		if((rec==false),{
+			done.remove.()},{
+				done.action_({ arg button;
+					done.states=[["", Color.black, Color.black]];
+					done.action_({});
+					done.remove();
+					ret.off();
+				});
+			});
+		//if((rec==false), { done.action(done); });
 		play.action_({arg button;
 			ret.syn(0,  ret.rate, ret.vol);
 		});
@@ -128,15 +139,16 @@ SynthDef.new(\pb,{
 	1000.do {|i|
 		{
 			var fn, buff = s.cachedBufferAt(i);
-			fn = "./looper"+i+".aiff";
+			fn = ["./looper",i,".aiff"].join("");
 			buff.write(fn.asString);
 		}.try;
 	}
 };
 
-
+//~dumpalltodisk.();
 
 ~newlooper = {
+	arg files = [];
 	var wl,update,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1;
 	rec = Rect(0,0,400,768);
 	win = Window("Loop ", rec, scroll: true);
@@ -158,16 +170,25 @@ SynthDef.new(\pb,{
 	};
 	update = {
 		var height, bounds;
-		"Inside update".postln;
 		bounds = master.asView.bounds;
 		height = (master.asView.children.size+1)*50;
-		height.postln;
-		"update".postln;
 		master.asView.resizeTo(bounds.width, height); //50*(n+1));		
 	};
 	mklooper = {
-		var bounds,ui, looper = ~drecordit.(dur: 30.0), height;		
-		n = n + 1;
+		arg file=false;
+		var bounds,ui, looper, height;
+		if(file==false,
+			{looper = ~drecordit.(dur: 30.0)},
+			{
+				var buff;
+				file.postln;
+				"Reading the buffer!".postln;
+				buff = Buffer.read(s, file);
+				"Buffer read!".postln;
+				looper = ~drecordit.( dur: 30.0, buff: buff, name: file.basename.splitext.[0] );
+			}
+		);
+		//n = n + 1;
 		ui = looper.ui(master, update);
 		//add.(ui);
 		update.();
@@ -182,7 +203,24 @@ SynthDef.new(\pb,{
 		add.(button);
 	};
 	initui.();
+	files.do( {|file|
+		mklooper.( file);
+	});
 	win.front;
 };
 
-~newlooper.();
+//~newlooper.();
+~aiffs = "./loopers/*.aiff".pathMatch;
+~newlooper.(files: ~aiffs);
+
+
+~wavs = "/home/hindle1/projects/bubble-warp/wavs/1.harmonic*wav".pathMatch;
+~newlooper.(files: ~wavs);
+
+~wavs = "/home/hindle1/projects/bubble-warp/wavs/*wav".pathMatch;
+~newlooper.(files: ~wavs);
+
+~newlooper.(files: ("/home/hindle1/projects/oldburn/Harbinger/notes/sine2/*wav".pathMatch));
+11111
+
+["2",1,"1"].join("")
