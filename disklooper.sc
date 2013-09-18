@@ -52,7 +52,7 @@ SynthDef.new(\pb,{
 		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate]) 
 	};
 	ret.ui = {
-		arg win;
+		arg win, rupdate;
 		var label, done, play, loop, loopsyn, cv,gl,remove;
 		cv = View(win);
 		cv.minSize_(Size(200,50));
@@ -71,8 +71,9 @@ SynthDef.new(\pb,{
 		cv.layout_(GridLayout.columns([remove],[label],[done],[play],[loop]));
 		remove.action_({arg button;
 			cv.remove();
+			"Calling update".postln;
+			rupdate.();
 		});
-
 		done.action_({ arg button;
 			done.states=[["", Color.black, Color.black]];
 			done.action_({});
@@ -101,18 +102,6 @@ SynthDef.new(\pb,{
 	ret
 };
 
-~looperw = {
-	var win, spawner;
-	spawner = Button();
-	spawner.states=[["Spawn".asString, Color.black, Color.red]];
-	win=Window("Looper").layout_( GridLayout.rows([spawner]) ).front;		
-	spawner.action_({ arg button;
-		var looper;
-		looper = ~recordit.(dur: 30.0);
-		looper.ui;
-	});
-};
-//~looperw.();
 
 ~dumpalltodisk = {
 	1000.do {|i|
@@ -127,7 +116,7 @@ SynthDef.new(\pb,{
 
 
 ~newlooper = {
-	var wl,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1;
+	var wl,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1, update;
 	//win = Window("Loop ", Rect(0,0,300,768), scroll: true).layout_(VLayout()).front;//layout_( FlowLayout()).front;		
 	rec = Rect(0,0,300,768);
 	//win = Window("Loop ", rec, scroll: true);//.layout_(VLayout()).front;//layout_( FlowLayout()).front;		
@@ -182,22 +171,30 @@ SynthDef.new(\pb,{
 		//win.layout.free;
 		//win.layout_( GridLayout.rows( *ml ) );	
 	};
+	update = {
+		var height, bounds;
+		"Inside update".postln;
+		bounds = master.asView.bounds;
+		height = (master.asView.children.size+1)*50;
+		height.postln;
+		"update".postln;
+		master.asView.resizeTo(bounds.width, height); //50*(n+1));		
+	};
 	remove = {
-		arg row;
-		var ml;
-		wl.at(row).remove;
-		wl.removeAt(row);	
-		ml = wl.collect( {|x| [x] });
-		win.layout.free;
-		win.layout_( GridLayout.rows( *ml ) );
+		//arg row;
+		//var ml;
+		//wl.at(row).remove;
+		//wl.removeAt(row);	
+		//ml = wl.collect( {|x| [x] });
+		//win.layout.free;
+		//win.layout_( GridLayout.rows( *ml ) );
 	};
 	mklooper = {
-		var bounds,ui, looper = ~recordit.(dur: 30.0);		
-		bounds = master.asView.bounds;
-		master.asView.resizeTo(bounds.width,50*(n+1));
+		var bounds,ui, looper = ~recordit.(dur: 30.0), height;		
 		n = n + 1;
-		ui = looper.ui(master);
+		ui = looper.ui(master, update);
 		add.(ui);
+		update.();
 	};
 	initui = {
 		var button;
@@ -222,5 +219,7 @@ SynthDef.new(\pb,{
 };
 
 ~newlooper.();
+
+
 
 //~l = ~recordit.(dur: 30.0)
