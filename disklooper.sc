@@ -9,13 +9,13 @@ SynthDef.new(\recordit,{
 	RecordBuf.ar( in, bufnum, doneAction: 2, loop: 0);
 }).load(s);
 SynthDef.new(\pb,{
-	arg output= 0, bufnum = 0, loop = 0, rate = 1.0;
+	arg output= 0, bufnum = 0, loop = 0, rate = 1.0, amp = 1.0;
 	Out.ar(output,
-		PlayBuf.ar(2, bufnum, rate, BufRateScale.kr(bufnum), loop: loop, doneAction: 2));
+		amp * PlayBuf.ar(2, bufnum, rate, BufRateScale.kr(bufnum), loop: loop, doneAction: 2));
 }).load(s);
-~recorditname = 1;
+~drecorditname = 1;
 
-~recordit = {
+~drecordit = {
 	arg input = 0, dur = 1.0;
 	var buff, bnum, ret, rec, startTime, name,ttt;
 	name = ~recorditname.asString;
@@ -47,32 +47,53 @@ SynthDef.new(\pb,{
 		looping.postln;
 	};
 	ret.syn = { 
-		arg obj, looping = 0, rate = 1.0;
+		arg obj, looping = 0, rate = 1.0, amp=1.0;
 		ret.bnum.postln;
-		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate]) 
+		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate, \amp, amp]) 
 	};
+	ret.rate = 1.0;
+	ret.vol = 1.0;
 	ret.ui = {
-		arg win, rupdate;
-		var label, done, play, loop, loopsyn, cv,gl,remove;
+		arg obj, win, rupdate;
+		var label, done, play, loop, loopsyn=0, cv,gl,remove,rcb, rateknobr, volknob;
+		rcb = rupdate;
 		cv = View(win);
 		cv.minSize_(Size(200,50));
+		volknob = Knob();
+		rateknobr = Knob();
+		//rateknobr.minSize_(Size(20,20));
 		label = TextField();
 		done = Button();
 		done.states=[["Stop Recording".asString, Color.black, Color.red]];
 		play = Button();
 		play.states=[["Play".asString, Color.black, Color.green]];
 		remove = Button();
+		remove.minSize_(Size(5,5));
+		remove.maxSize_(Size(20,50));
 		remove.states=[["X".asString, Color.green, Color.red]];
 		loop = Button();
 		loop.states=[
 			["Loop?".asString, Color.black, Color.green],
 			["Looping".asString, Color.black, Color.red],
 		];
-		cv.layout_(GridLayout.columns([remove],[label],[done],[play],[loop]));
+		cv.layout_(GridLayout.columns([remove],[label],[done],[play],[loop],[rateknobr],[volknob]));
+		volknob.value_(0.5);
+		volknob.action_({
+			ret.vol = 0.001 + 2 * volknob.value;
+			if((loopsyn!=0),{loopsyn.set(\amp, ret.vol)});
+		});
+		rateknobr.value_(0.5);
+		//rateknobr.orientation_(\horizontal);
+		rateknobr.action_({
+			ret.rate = 0.01 + 2 * rateknobr.value;
+			if((loopsyn!=0),{loopsyn.set(\rate, ret.rate)});
+		});
 		remove.action_({arg button;
 			cv.remove();
 			"Calling update".postln;
-			rupdate.();
+			rcb.postln;
+			rcb.();
+			loopsyn.free;
 		});
 		done.action_({ arg button;
 			done.states=[["", Color.black, Color.black]];
@@ -81,12 +102,12 @@ SynthDef.new(\pb,{
 			ret.off();
 		});
 		play.action_({arg button;
-			ret.syn();
+			ret.syn(0,  ret.rate, ret.vol);
 		});
 		loop.action_({arg button;
 			if ((button.value == 1), 
 				{
-					loopsyn = ret.syn(1);
+					loopsyn = ret.syn(1, ret.rate, ret.vol);
 				},
 				{
 					loopsyn.free;
@@ -116,45 +137,13 @@ SynthDef.new(\pb,{
 
 
 ~newlooper = {
-	var wl,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1, update;
-	//win = Window("Loop ", Rect(0,0,300,768), scroll: true).layout_(VLayout()).front;//layout_( FlowLayout()).front;		
-	rec = Rect(0,0,300,768);
-	//win = Window("Loop ", rec, scroll: true);//.layout_(VLayout()).front;//layout_( FlowLayout()).front;		
-	//win.layout_(VLayout());
-	//master = win;
-
+	var wl,update,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1;
+	rec = Rect(0,0,400,768);
 	win = Window("Loop ", rec, scroll: true);
 	vi = View(win);	
 	vi.minSize_(Size(400,400));
 	vi.layout_(VLayout());
 	master = vi;
-
-	//vi = View(win);
-
-	//win.asView.maxSize_(Size(1024,768));
-	//win = Window("Loop ", scroll: true).layout_(VLayout()).front;//layout_( FlowLayout()).front;		
-	//win.maxSize_(Size(1024,768));
-	//scv = ScrollView(win);//, rec);//, Rect(0, 0, 300, 300)).hasBorder_(true);
-	//scv.minSize_(Size(300,768));
-	//vi = View(win);//,rec);//, Rect(0, 0, 500, 500));
-	//vi.minSize_(Size(300,2000));
-	//vi.maxSize_(Size(1000,30000));
-	//vi.minSizeHint = Size(300,200);
-	//vi.layout_(VLayout());
-	//vi.layout.spacing = 5;
-	//vi.layout.margins = [10,10,10,10];
-	//vi.layout_(FlowLayout(FlowLayout( vi.bounds, 10@10, 20@5 );));
-	//vi.decorator = FlowLayout( vi.bounds,  10@10, 20@5 );
-	//vi.addFlowLayout( 10@10, 20@5 );
-
-	//scv.layout_(VLayout());
-	//master = win;
-	//master = win;
-	//vi.resize_(5);
-	//scv.resize_(5);
-	//vi.resize_( 5 );
-	//win.addFlowLayout( 10@10, 20@5 );
-	//win.
 	mktxt = {
 		arg str;
 		var st = StaticText(w);
@@ -166,10 +155,6 @@ SynthDef.new(\pb,{
 		arg element;
 		var ml;
 		master.layout.add(element,0,\topleft);
-		//wl.add(element);
-		//ml = wl.collect( {|x| [x] });
-		//win.layout.free;
-		//win.layout_( GridLayout.rows( *ml ) );	
 	};
 	update = {
 		var height, bounds;
@@ -180,20 +165,11 @@ SynthDef.new(\pb,{
 		"update".postln;
 		master.asView.resizeTo(bounds.width, height); //50*(n+1));		
 	};
-	remove = {
-		//arg row;
-		//var ml;
-		//wl.at(row).remove;
-		//wl.removeAt(row);	
-		//ml = wl.collect( {|x| [x] });
-		//win.layout.free;
-		//win.layout_( GridLayout.rows( *ml ) );
-	};
 	mklooper = {
-		var bounds,ui, looper = ~recordit.(dur: 30.0), height;		
+		var bounds,ui, looper = ~drecordit.(dur: 30.0), height;		
 		n = n + 1;
 		ui = looper.ui(master, update);
-		add.(ui);
+		//add.(ui);
 		update.();
 	};
 	initui = {
@@ -207,19 +183,6 @@ SynthDef.new(\pb,{
 	};
 	initui.();
 	win.front;
-
-	//add.(mktxt.("0"));
-	//add.(mktxt.("1"));
-	//add.(mktxt.("2"));
-	//add.(mktxt.("3"));
-	//remove.(0);
-	//remove.(1);
-	//add.(mktxt.("4"));
-	//wl
 };
 
 ~newlooper.();
-
-
-
-//~l = ~recordit.(dur: 30.0)
