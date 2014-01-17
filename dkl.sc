@@ -72,6 +72,7 @@ SynthDef("DKLG",{
 ~envs.(~dklg);
 
 
+
 ~sliders = {
    arg dkl;
    var n,w,m,o,p,q;

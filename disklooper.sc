@@ -1,5 +1,5 @@
-s.boot;
 s.options.numBuffers = 16000;
+s.boot;
 s.scope;
 s.freqscope;
 
@@ -212,7 +212,7 @@ SynthDef.new(\pb,{
 //~newlooper.();
 ~aiffs = "./loopers/*.aiff".pathMatch;
 ~newlooper.(files: ~aiffs);
-
+~newlooper.(files: []);
 
 ~wavs = "/home/hindle1/projects/bubble-warp/wavs/1.harmonic*wav".pathMatch;
 ~newlooper.(files: ~wavs);
@@ -222,5 +222,10 @@ SynthDef.new(\pb,{
 
 ~newlooper.(files: ("/home/hindle1/projects/oldburn/Harbinger/notes/sine2/*wav".pathMatch));
 11111
-
+~newlooper.(files: ("/home/hindle1/projects/mostitch/old/*wav".pathMatch));
+~newlooper.(files: ("/opt/hindle1/hdprojects/oldburn/EventGUI/melontron/palette/*wav".pathMatch));
+~newlooper.(files: "/opt/hindle1/hdprojects/oldburn/old-pinion-projects/projects/line_scratch/samples2/*wav".pathMatch);
 ["2",1,"1"].join("")
+
+~newlooper.(files: "/home/hindle1/Music/AudacitySaves/atr-sounds/*wav".pathMatch);
+
