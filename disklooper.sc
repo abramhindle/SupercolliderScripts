@@ -18,6 +18,67 @@ SynthDef.new(\pb,{
 }).load(s);
 ~drecorditname = 1;
 
+
+
+
+
+
+
+
+(
+SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
+    var sig;
+    sig = SinOsc.ar(freq, 0, amp) * EnvGen.kr(Env.perc(0.01, sustain), doneAction: 2);
+    Out.ar(0, sig ! 2);    // sig ! 2 is the same as [sig, sig]
+}).add;
+)
+
+
+// tasker allows for looping and what not
+
+~waits = ( " ".ascii[0] : 1, ".".ascii[0] : 2, 
+	",".ascii[0] : 4, "/".ascii[0] : 8 ,
+	"\\".ascii[0] : 16, "|".ascii[0] : 32 );
+
+~tasker = { arg trigger, notes="aaa", basewait = 0.125;
+	var ret = ();
+	ret.nnotes = notes;
+	ret.notes = {
+		arg obj, newnotes;
+		ret.nnotes = newnotes;
+		ret.nnotes.postln;
+	};
+	ret.notes(notes);
+	ret.t = Task({
+		loop {
+			ret.nnotes.ascii.do({ |midi|
+				var orig = midi;
+				midi = midi - 32;
+				if (~waits[orig] != nil, {
+					(~waits[orig]*basewait).wait;
+				}, {
+					if(midi > 0, {
+						trigger.(midi);
+						//Synth(\singrain, [freq: midi.midicps, amp: 0.2, sustain: 0.1]);
+					});
+					basewait.wait;
+				});
+			});
+		}
+	}).play;
+	ret.end = {|self| ret.t.stop(); };
+	ret.start = {|self| ret.t.play(); };
+	ret
+};
+
+//~t = ~tasker.( {|midi| Synth(\singrain, [freq: midi.midicps, amp: 0.2, sustain: 0.1]);},
+//	notes:"aa b");
+//~t.notes("aAaA|");
+
+
+
+
+
 ~drecordit = {
 	arg input = 0, dur = 1.0, buff = false, name = "";
 	var bnum, ret, rec=false, startTime, ttt,startrecording=true;
@@ -57,19 +118,30 @@ SynthDef.new(\pb,{
 		ret.bnum.postln;
 		Synth(\pb,[\bufnum, ret.bnum, \loop, looping, \rate, rate, \amp, amp, \channels, ret.channels]) 
 	};
+	// got a tasker
+	ret.task = ~tasker.( {|midi|
+		var adiff = midi - (97 - 32), rate;
+		"tasker".postln;
+		// 
+		rate = 1.0 + (adiff / 94.0);
+		rate.postln;
+		ret.syn(0, ret.rate * rate, ret.vol)
+	}, notes:"   ");
 	ret.rate = 1.0;
 	ret.vol = 1.0;
 	ret.ui = {
 		arg obj, win, rupdate;
-		var label, done, play, loop, loopsyn=0, cv,gl,remove,rcb, rateknobr, volknob;
+		var label, done, play, loop, loopsyn=0, cv,gl,remove,rcb, rateknobr, volknob, sequencer;
 		rcb = rupdate;
 		cv = View(win);
-		cv.minSize_(Size(200,50));
+		cv.minSize_(Size(250,50));
 		volknob = Knob();
 		rateknobr = Knob();
 		//rateknobr.minSize_(Size(20,20));
 		label = TextField();
 		label.string_(name);
+		sequencer = TextField();
+		sequencer.string_(" ");
 		done = Button();
 		done.states=[["Stop Recording".asString, Color.black, Color.red]];
 		play = Button();
@@ -83,7 +155,7 @@ SynthDef.new(\pb,{
 			["Loop?".asString, Color.black, Color.green],
 			["Looping".asString, Color.black, Color.red],
 		];
-		cv.layout_(GridLayout.columns([remove],[label],[done],[play],[loop],[rateknobr],[volknob]));
+		cv.layout_(GridLayout.columns([remove],[label],[done],[play],[loop],[rateknobr],[volknob],[sequencer]));
 		volknob.value_(0.5);
 		volknob.action_({
 			ret.vol = 0.001 + 2 * volknob.value;
@@ -129,6 +201,12 @@ SynthDef.new(\pb,{
 			//win.name = tf.value;
 			1;
 		});
+		sequencer.action_({arg tf;
+			"change value".postln;
+			ret.task.notes(tf.value);
+			1;
+		});
+
 	    cv
 	};
 	ret
