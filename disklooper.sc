@@ -123,7 +123,7 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 		var adiff = midi - (97 - 32), rate;
 		"tasker".postln;
 		// 
-		rate = 1.0 + (adiff / 94.0);
+		rate = 1.0 + (adiff / 48.0);
 		rate.postln;
 		ret.syn(0, ret.rate * rate, ret.vol)
 	}, notes:"   ");
@@ -134,12 +134,13 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 		var label, done, play, loop, loopsyn=0, cv,gl,remove,rcb, rateknobr, volknob, sequencer;
 		rcb = rupdate;
 		cv = View(win);
-		cv.minSize_(Size(250,50));
+		cv.minSize_(Size(400,50));
 		volknob = Knob();
 		rateknobr = Knob();
 		//rateknobr.minSize_(Size(20,20));
 		label = TextField();
 		label.string_(name);
+		label.minSize_(Size(50,10));
 		sequencer = TextField();
 		sequencer.string_(" ");
 		done = Button();
@@ -206,7 +207,6 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 			ret.task.notes(tf.value);
 			1;
 		});
-
 	    cv
 	};
 	ret
@@ -228,10 +228,10 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 ~newlooper = {
 	arg files = [];
 	var wl,update,add,remove,win,mktxt,mklooper, initui, scv, vi, master, rec,n=1;
-	rec = Rect(0,0,400,768);
+	rec = Rect(0,0,1024,768);
 	win = Window("Loop ", rec, scroll: true);
 	vi = View(win);	
-	vi.minSize_(Size(400,400));
+	vi.minSize_(Size(1024,768));
 	vi.layout_(VLayout());
 	master = vi;
 	mktxt = {
@@ -290,6 +290,7 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 //~newlooper.();
 ~aiffs = "./loopers/*.aiff".pathMatch;
 ~newlooper.(files: ~aiffs);
+
 ~newlooper.(files: []);
 
 ~wavs = "/home/hindle1/projects/bubble-warp/wavs/1.harmonic*wav".pathMatch;
@@ -299,11 +300,13 @@ SynthDef(\singrain, { |freq = 440, amp = 0.2, sustain = 1|
 ~newlooper.(files: ~wavs);
 
 ~newlooper.(files: ("/home/hindle1/projects/oldburn/Harbinger/notes/sine2/*wav".pathMatch));
-11111
+//11111
 ~newlooper.(files: ("/home/hindle1/projects/mostitch/old/*wav".pathMatch));
 ~newlooper.(files: ("/opt/hindle1/hdprojects/oldburn/EventGUI/melontron/palette/*wav".pathMatch));
 ~newlooper.(files: "/opt/hindle1/hdprojects/oldburn/old-pinion-projects/projects/line_scratch/samples2/*wav".pathMatch);
 ["2",1,"1"].join("")
 
 ~newlooper.(files: "/home/hindle1/Music/AudacitySaves/atr-sounds/*wav".pathMatch);
+
+~newlooper.(files: "/home/hindle1/projects/rapid-fire-instruments/wavs/*wav".pathMatch);
 
